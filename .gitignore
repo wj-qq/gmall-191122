@@ -1,3 +1,21 @@
+target/
+.idea/
+*.iml
+/**/.iml
+/**/.DS_Store
+/**/.settings/
+/**/.project
+/**/.classpath
+**/rebel.xml
+/**/.externalToolBuilders/
+/**/.yml
+application.properties
+.gitignore
+rebel.xml
+test/
+
+
+
 # Compiled class file
 *.class
 
