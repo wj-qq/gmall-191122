@@ -6,13 +6,13 @@ import com.atguigu.gmall.product.service.ManageService;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import io.swagger.models.auth.In;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
+ * 商品后台管理控制层
  * @author Administrator
  * @create 2020-05-12 22:40
  */
