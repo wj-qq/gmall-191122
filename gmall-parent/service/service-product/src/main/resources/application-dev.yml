@@ -10,7 +10,7 @@ spring:
   cloud:
     sentinel:
       transport:
-        dashboard: http://192.168.200.128:8080
+        dashboard: http://192.168.200.128:8858
   rabbitmq:
     host: 192.168.200.128 #47.93.118.241
     port: 9672

@@ -3,7 +3,9 @@ package com.atguigu.gmall.product.service;
 import com.atguigu.gmall.model.product.*;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Administrator
@@ -57,4 +59,19 @@ public interface ManageService {
 
     //下架商品
     void cancelSale(Long skuId);
+
+    //根据skuId获取sku信息
+    SkuInfo getSkuInfo(Long skuId);
+
+    //通过三级分类id查询分类信息
+    BaseCategoryView getCategoryView(Long category3Id);
+
+    //获取sku价格
+    BigDecimal getSkuPrice(Long skuId);
+
+    //根据spuId，skuId 查询销售属性集合
+    List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(Long skuId, Long spuId);
+
+    //根据spuId 查询map 集合属性  销售属性值的组合
+    Map getSkuValueIdsMap(Long spuId);
 }

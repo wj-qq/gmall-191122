@@ -23,4 +23,23 @@
         where ssa.spu_id = #{spuId}
     </select>
 
+    <select id="getSpuSaleAttrListCheckBySku" resultMap="spuSaleAttrListMap">
+        SELECT
+            ssa.id,
+            ssa.spu_id,
+            ssa.base_sale_attr_id,
+            ssa.sale_attr_name,
+            ssv.id vid,
+            ssv.sale_attr_value_name,
+            skv.sku_id,
+            IF(skv.sku_id IS NULL,0,1)  is_checked
+        FROM spu_sale_attr ssa
+        INNER JOIN spu_sale_attr_value ssv
+        on ssa.spu_id = ssv.spu_id AND ssa.base_sale_attr_id = ssv.base_sale_attr_id
+        LEFT JOIN sku_sale_attr_value skv
+        on skv.sale_attr_value_id = ssv.id and skv.sku_id = #{skuId}
+        WHERE ssa.spu_id = #{spuId}
+        ORDER BY ssa.base_sale_attr_id,ssv.id
+    </select>
+
 </mapper>

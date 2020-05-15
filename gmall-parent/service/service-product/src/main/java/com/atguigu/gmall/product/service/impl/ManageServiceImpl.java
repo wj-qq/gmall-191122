@@ -11,8 +11,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -53,6 +56,8 @@ public class ManageServiceImpl implements ManageService {
     private SkuAttrValueMapper skuAttrValueMapper;
     @Autowired
     private SkuSaleAttrValueMapper skuSaleAttrValueMapper;
+    @Autowired
+    private BaseCategoryViewMapper baseCategoryViewMapper;
 
     //获取商品一级分类
     @Override
@@ -218,5 +223,46 @@ public class ManageServiceImpl implements ManageService {
         skuInfo.setIsSale(0);
         skuInfo.setId(skuId);
         skuInfoMapper.updateById(skuInfo);
+    }
+
+    //根据skuId获取sku信息
+    @Override
+    public SkuInfo getSkuInfo(Long skuId) {
+        return skuInfoMapper.selectById(skuId);
+    }
+
+    //通过三级分类id查询分类信息
+    @Override
+    public BaseCategoryView getCategoryView(Long category3Id) {
+        return baseCategoryViewMapper.selectById(category3Id);
+    }
+
+    //获取sku价格
+    @Override
+    public BigDecimal getSkuPrice(Long skuId) {
+        SkuInfo skuInfo = skuInfoMapper.selectById(skuId);
+        if(skuInfo != null){
+            return skuInfo.getPrice();
+        }
+        return new BigDecimal("0");
+    }
+
+    //根据spuId，skuId 查询销售属性集合
+    @Override
+    public List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(Long skuId, Long spuId) {
+        return spuSaleAttrMapper.getSpuSaleAttrListCheckBySku(skuId,spuId);
+    }
+
+    //根据spuId 查询map 集合属性  销售属性值的组合
+    @Override
+    public Map getSkuValueIdsMap(Long spuId) {
+        HashMap<Object, Object> result = new HashMap<>();
+        List<Map> mapList = skuSaleAttrValueMapper.getSkuValueIdsMap(spuId);
+        if(!CollectionUtils.isEmpty(mapList)){
+            mapList.forEach(map -> {
+                result.put(map.get("value_ids"),map.get("sku_id"));
+            });
+        }
+        return result;
     }
 }
