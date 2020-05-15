@@ -169,6 +169,7 @@ public class ManageServiceImpl implements ManageService {
     @Override
     public void saveSkuInfo(SkuInfo skuInfo) {
         //保存sku基本信息表
+        skuInfo.setIsSale(0);
         skuInfoMapper.insert(skuInfo);
         //保存sku图片表
         List<SkuImage> skuImageList = skuInfo.getSkuImageList();
@@ -204,7 +205,8 @@ public class ManageServiceImpl implements ManageService {
     //上架商品
     @Override
     public void onSale(Long skuId) {
-        SkuInfo skuInfo = skuInfoMapper.selectById(skuId);
+        SkuInfo skuInfo = new SkuInfo();
+        skuInfo.setId(skuId);
         skuInfo.setIsSale(1);
         skuInfoMapper.updateById(skuInfo);
     }
@@ -212,8 +214,9 @@ public class ManageServiceImpl implements ManageService {
     //下架商品
     @Override
     public void cancelSale(Long skuId) {
-        SkuInfo skuInfo = skuInfoMapper.selectById(skuId);
+        SkuInfo skuInfo = new SkuInfo();
         skuInfo.setIsSale(0);
+        skuInfo.setId(skuId);
         skuInfoMapper.updateById(skuInfo);
     }
 }
