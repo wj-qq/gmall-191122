@@ -13,6 +13,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>service-product-client</module>
+        <module>service-item-client</module>
     </modules>
 
     <dependencies>

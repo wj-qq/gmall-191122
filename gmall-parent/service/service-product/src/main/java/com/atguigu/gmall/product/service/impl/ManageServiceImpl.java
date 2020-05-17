@@ -1,21 +1,25 @@
 package com.atguigu.gmall.product.service.impl;
 
+import com.alibaba.nacos.common.util.UuidUtils;
+import com.atguigu.gmall.common.constant.RedisConst;
 import com.atguigu.gmall.model.product.*;
 import com.atguigu.gmall.product.mapper.*;
 import com.atguigu.gmall.product.service.ManageService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -58,6 +62,10 @@ public class ManageServiceImpl implements ManageService {
     private SkuSaleAttrValueMapper skuSaleAttrValueMapper;
     @Autowired
     private BaseCategoryViewMapper baseCategoryViewMapper;
+    @Autowired
+    private RedisTemplate redisTemplate;
+    @Autowired
+    private RedissonClient redissonClient;
 
     //获取商品一级分类
     @Override
@@ -225,10 +233,99 @@ public class ManageServiceImpl implements ManageService {
         skuInfoMapper.updateById(skuInfo);
     }
 
+    //使用redisson缓存及分布式锁
+    public SkuInfo getSkuInfoRedisson(Long skuId) {
+        String cacheKey = RedisConst.SKUKEY_PREFIX + skuId + RedisConst.SKUKEY_SUFFIX;
+        String lockKey = RedisConst.SKUKEY_PREFIX + skuId + RedisConst.SKULOCK_SUFFIX;
+
+        SkuInfo skuInfo = (SkuInfo) redisTemplate.opsForValue().get(cacheKey);
+        if (skuInfo != null){//返回缓存中数据
+            return skuInfo;
+        }else {//缓存没有，才查询数据库
+            RLock lock = redissonClient.getLock(lockKey);
+            try {
+                boolean isLock = lock.tryLock(RedisConst.SKULOCK_EXPIRE_PX1,RedisConst.SKULOCK_EXPIRE_PX2,TimeUnit.SECONDS);//1.尝试等待锁的时间 2.锁的过期时间
+                if(isLock){//拿到锁 //查询数据库
+                    skuInfo = skuInfoMapper.selectById(skuId);
+                    if(skuInfo != null){
+                        //查询图片信息
+                        List<SkuImage> skuImages = skuImageMapper.selectList(new QueryWrapper<SkuImage>().eq("sku_id", skuId));
+                        skuInfo.setSkuImageList(skuImages);
+                        //缓存雪崩（大量缓存同时过期，请求过大） 在过期时间上加上随机数
+                        int i = new Random().nextInt(5);
+                        redisTemplate.opsForValue().set(cacheKey,skuInfo,RedisConst.SKUKEY_TIMEOUT + i,TimeUnit.SECONDS);
+                    }else{//缓存穿透  可返回空结果
+                        skuInfo = new SkuInfo();
+                        redisTemplate.opsForValue().set(cacheKey,skuInfo,5, TimeUnit.MINUTES);
+                    }
+
+                }else{//没拿到锁
+                    //防止缓存击穿，其他请求先睡一会再去查询
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    this.getSkuInfoRedisson(skuId);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }finally {//释放锁
+                if(lock.isLocked()) {
+                    lock.unlock();
+                }
+            }
+        }
+        return skuInfo;
+    }
+
     //根据skuId获取sku信息
+    //使用redis分布式锁
     @Override
     public SkuInfo getSkuInfo(Long skuId) {
-        return skuInfoMapper.selectById(skuId);
+        String cacheKey = RedisConst.SKUKEY_PREFIX + skuId + RedisConst.SKUKEY_SUFFIX;
+        String lockKey = RedisConst.SKUKEY_PREFIX + skuId + RedisConst.SKULOCK_SUFFIX;
+        SkuInfo skuInfo = (SkuInfo) redisTemplate.opsForValue().get(cacheKey);
+        if (skuInfo != null){//返回缓存中数据
+            return skuInfo;
+        }else{//缓存没有，才查询数据库
+            //相当于setnx falg = 1 第一次查询 已上锁  flag=0 不是第一次， 未上锁
+            //uuid防误删 防止代码没执行完时，锁已自动释放，防止误删锁
+            String uuid = UuidUtils.generateUuid();
+            Boolean flag = redisTemplate.opsForValue().setIfAbsent(lockKey, uuid, 2, TimeUnit.SECONDS);
+            if(flag){//缓存击穿（大量请求同时访问同一数据库） 加分布式锁
+                skuInfo = skuInfoMapper.selectById(skuId);
+                if(skuInfo != null){
+                    //查询图片信息
+                    List<SkuImage> skuImages = skuImageMapper.selectList(new QueryWrapper<SkuImage>().eq("sku_id", skuId));
+                    skuInfo.setSkuImageList(skuImages);
+                    //缓存雪崩（大量缓存同时过期，请求过大） 在过期时间上加上随机数
+                    int i = new Random().nextInt(5);
+                    redisTemplate.opsForValue().set(cacheKey,skuInfo,RedisConst.SKUKEY_TIMEOUT + i,TimeUnit.SECONDS);
+                }else{//缓存穿透  可返回空结果
+                    skuInfo = new SkuInfo();
+                    redisTemplate.opsForValue().set(cacheKey,skuInfo,5, TimeUnit.MINUTES);
+                }
+                //可以防误删，但是代码执行步骤多，缺乏原子性
+                //使用LUA脚本  有原子性
+                String script = "if redis.call('get', KEYS[1]) == ARGV[1] then return tostring(redis.call('del',KEYS[1])) else return 0 end";
+                this.redisTemplate.execute(new DefaultRedisScript<>(script), Collections.singletonList(lockKey), uuid);
+
+//                if(uuid.equals(redisTemplate.opsForValue().get(lockKey))){
+//                    redisTemplate.delete(lockKey);//手动解锁
+//                }
+            }else{//没拿到锁
+                //防止缓存击穿，其他请求先睡一会再去查询
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                this.getSkuInfo(skuId);
+            }
+
+        }
+        return skuInfo;
     }
 
     //通过三级分类id查询分类信息
