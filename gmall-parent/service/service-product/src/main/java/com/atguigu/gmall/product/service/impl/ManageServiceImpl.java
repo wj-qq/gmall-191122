@@ -261,11 +261,7 @@ public class ManageServiceImpl implements ManageService {
 
                 }else{//没拿到锁
                     //防止缓存击穿，其他请求先睡一会再去查询
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                   Thread.sleep(1000);
                     this.getSkuInfoRedisson(skuId);
                 }
             } catch (InterruptedException e) {
@@ -331,7 +327,37 @@ public class ManageServiceImpl implements ManageService {
     //通过三级分类id查询分类信息
     @Override
     public BaseCategoryView getCategoryView(Long category3Id) {
-        return baseCategoryViewMapper.selectById(category3Id);
+        String cacheKey = RedisConst.SKUKEY_PREFIX + category3Id + RedisConst.SKUKEY_SUFFIX;
+        String lockKey = RedisConst.SKUKEY_PREFIX + category3Id + RedisConst.SKULOCK_SUFFIX;
+        BaseCategoryView baseCategoryView = (BaseCategoryView) redisTemplate.opsForValue().get(cacheKey);
+        if(baseCategoryView != null){
+            return baseCategoryView;
+        }else {
+            RLock lock = redissonClient.getLock(lockKey);
+            try {
+                boolean tryLock = lock.tryLock(RedisConst.SKULOCK_EXPIRE_PX1, RedisConst.SKULOCK_EXPIRE_PX2, TimeUnit.SECONDS);
+                if(tryLock){//缓存击穿
+                    baseCategoryView = baseCategoryViewMapper.selectById(category3Id);//查数据库
+                    if(baseCategoryView != null){//缓存雪崩
+                        redisTemplate.opsForValue().set(cacheKey,baseCategoryView,RedisConst.SKUKEY_TIMEOUT,TimeUnit.SECONDS);
+                    }else {//缓存穿透
+                        baseCategoryView = new BaseCategoryView();
+                        redisTemplate.opsForValue().set(cacheKey,baseCategoryView,5, TimeUnit.MINUTES);
+                    }
+                }else{//没拿到锁
+                    //重新查询
+                    Thread.sleep(1000);
+                    return (BaseCategoryView) redisTemplate.opsForValue().get(cacheKey);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }finally {
+                if(lock.isLocked()){
+                    lock.unlock();
+                }
+            }
+        }
+        return baseCategoryView;
     }
 
     //获取sku价格
@@ -347,19 +373,75 @@ public class ManageServiceImpl implements ManageService {
     //根据spuId，skuId 查询销售属性集合
     @Override
     public List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(Long skuId, Long spuId) {
-        return spuSaleAttrMapper.getSpuSaleAttrListCheckBySku(skuId,spuId);
+        String cacheKey = RedisConst.SKUKEY_PREFIX + skuId + spuId + RedisConst.SKUKEY_SUFFIX;
+        String lockKey = RedisConst.SKUKEY_PREFIX + skuId + spuId + RedisConst.SKULOCK_SUFFIX;
+        List<SpuSaleAttr> spuSaleAttrListCheckBySku = (List<SpuSaleAttr>) redisTemplate.opsForValue().get(cacheKey);
+        if(!CollectionUtils.isEmpty(spuSaleAttrListCheckBySku)){
+            return spuSaleAttrListCheckBySku;
+        }else {
+            RLock lock = redissonClient.getLock(lockKey);
+            try {//缓存击穿
+                boolean tryLock = lock.tryLock(RedisConst.SKULOCK_EXPIRE_PX1, RedisConst.SKULOCK_EXPIRE_PX2, TimeUnit.SECONDS);
+                if(tryLock) {
+                    spuSaleAttrListCheckBySku = spuSaleAttrMapper.getSpuSaleAttrListCheckBySku(skuId, spuId);
+                    if (!CollectionUtils.isEmpty(spuSaleAttrListCheckBySku)) {//缓存雪崩
+                        redisTemplate.opsForValue().set(cacheKey, spuSaleAttrListCheckBySku, RedisConst.SKUKEY_TIMEOUT, TimeUnit.SECONDS);
+                    } else {//缓存穿透
+                        spuSaleAttrListCheckBySku = new ArrayList<>();
+                        redisTemplate.opsForValue().set(cacheKey, spuSaleAttrListCheckBySku, 5, TimeUnit.MINUTES);
+                    }
+                }else {
+                    Thread.sleep(1000);
+                    spuSaleAttrListCheckBySku = (List<SpuSaleAttr>) redisTemplate.opsForValue().get(cacheKey);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }finally {
+                if(lock.isLocked()){
+                    lock.unlock();
+                }
+            }
+        }
+        return spuSaleAttrListCheckBySku;
     }
 
     //根据spuId 查询map 集合属性  销售属性值的组合
     @Override
     public Map getSkuValueIdsMap(Long spuId) {
-        HashMap<Object, Object> result = new HashMap<>();
-        List<Map> mapList = skuSaleAttrValueMapper.getSkuValueIdsMap(spuId);
-        if(!CollectionUtils.isEmpty(mapList)){
-            mapList.forEach(map -> {
-                result.put(map.get("value_ids"),map.get("sku_id"));
-            });
+        String cacheKey = RedisConst.SKUKEY_PREFIX + spuId + RedisConst.SKUKEY_SUFFIX;
+        String lockKey = RedisConst.SKUKEY_PREFIX + spuId + RedisConst.SKULOCK_SUFFIX;
+        Map result = (Map) redisTemplate.opsForValue().get(cacheKey);
+        Map<Object, Object> finalResult = new HashMap<>();
+        if(!CollectionUtils.isEmpty(result)){
+            return result;
+        }else {
+            RLock lock = redissonClient.getLock(lockKey);
+            try {//缓存击穿
+                boolean tryLock = lock.tryLock(RedisConst.SKULOCK_EXPIRE_PX1, RedisConst.SKULOCK_EXPIRE_PX2, TimeUnit.SECONDS);
+                if(tryLock) {
+                    List<Map> mapList = skuSaleAttrValueMapper.getSkuValueIdsMap(spuId);
+                    if(!CollectionUtils.isEmpty(mapList)){
+                        mapList.forEach(map -> {
+                            finalResult.put(map.get("value_ids"),map.get("sku_id"));
+                        });
+                    }
+                    if (!CollectionUtils.isEmpty(finalResult)) {//缓存雪崩
+                        redisTemplate.opsForValue().set(cacheKey, finalResult, RedisConst.SKUKEY_TIMEOUT, TimeUnit.SECONDS);
+                    } else {//缓存穿透
+                        redisTemplate.opsForValue().set(cacheKey, finalResult, 5, TimeUnit.MINUTES);
+                    }
+                }else {
+                    Thread.sleep(1000);
+                    return (Map) redisTemplate.opsForValue().get(cacheKey);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }finally {
+                if(lock.isLocked()){
+                    lock.unlock();
+                }
+            }
         }
-        return result;
+        return finalResult;
     }
 }
