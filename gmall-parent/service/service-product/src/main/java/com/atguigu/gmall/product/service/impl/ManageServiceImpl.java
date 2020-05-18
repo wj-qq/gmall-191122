@@ -1,6 +1,7 @@
 package com.atguigu.gmall.product.service.impl;
 
 import com.alibaba.nacos.common.util.UuidUtils;
+import com.atguigu.gmall.common.cache.GmallCache;
 import com.atguigu.gmall.common.constant.RedisConst;
 import com.atguigu.gmall.model.product.*;
 import com.atguigu.gmall.product.mapper.*;
@@ -325,8 +326,11 @@ public class ManageServiceImpl implements ManageService {
     }
 
     //通过三级分类id查询分类信息
+    @GmallCache(prefix = "getCategoryView")//通过AOP来实现redis缓存和分布式锁
     @Override
     public BaseCategoryView getCategoryView(Long category3Id) {
+        return baseCategoryViewMapper.selectById(category3Id);
+        /*以下代码有问题
         String cacheKey = RedisConst.SKUKEY_PREFIX + category3Id + RedisConst.SKUKEY_SUFFIX;
         String lockKey = RedisConst.SKUKEY_PREFIX + category3Id + RedisConst.SKULOCK_SUFFIX;
         BaseCategoryView baseCategoryView = (BaseCategoryView) redisTemplate.opsForValue().get(cacheKey);
@@ -357,7 +361,7 @@ public class ManageServiceImpl implements ManageService {
                 }
             }
         }
-        return baseCategoryView;
+        return baseCategoryView;*/
     }
 
     //获取sku价格
@@ -371,9 +375,11 @@ public class ManageServiceImpl implements ManageService {
     }
 
     //根据spuId，skuId 查询销售属性集合
+    @GmallCache(prefix = "getSpuSaleAttrListCheckBySku")
     @Override
     public List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(Long skuId, Long spuId) {
-        String cacheKey = RedisConst.SKUKEY_PREFIX + skuId + spuId + RedisConst.SKUKEY_SUFFIX;
+        return spuSaleAttrMapper.getSpuSaleAttrListCheckBySku(skuId, spuId);
+       /* String cacheKey = RedisConst.SKUKEY_PREFIX + skuId + spuId + RedisConst.SKUKEY_SUFFIX;
         String lockKey = RedisConst.SKUKEY_PREFIX + skuId + spuId + RedisConst.SKULOCK_SUFFIX;
         List<SpuSaleAttr> spuSaleAttrListCheckBySku = (List<SpuSaleAttr>) redisTemplate.opsForValue().get(cacheKey);
         if(!CollectionUtils.isEmpty(spuSaleAttrListCheckBySku)){
@@ -402,12 +408,21 @@ public class ManageServiceImpl implements ManageService {
                 }
             }
         }
-        return spuSaleAttrListCheckBySku;
+        return spuSaleAttrListCheckBySku;*/
     }
 
     //根据spuId 查询map 集合属性  销售属性值的组合
+    @GmallCache(prefix = "getSkuValueIdsMap")
     @Override
     public Map getSkuValueIdsMap(Long spuId) {
+        Map result = new HashMap();
+        List<Map> skuValueIdsMap = skuSaleAttrValueMapper.getSkuValueIdsMap(spuId);
+        for (Map map : skuValueIdsMap) {
+            result.put(map.get("value_ids"), map.get("sku_id"));
+        }
+        return result;
+
+        /*
         String cacheKey = RedisConst.SKUKEY_PREFIX + spuId + RedisConst.SKUKEY_SUFFIX;
         String lockKey = RedisConst.SKUKEY_PREFIX + spuId + RedisConst.SKULOCK_SUFFIX;
         Map result = (Map) redisTemplate.opsForValue().get(cacheKey);
@@ -442,6 +457,6 @@ public class ManageServiceImpl implements ManageService {
                 }
             }
         }
-        return finalResult;
+        return finalResult;*/
     }
 }
