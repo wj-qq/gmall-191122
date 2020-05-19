@@ -1,5 +1,6 @@
 package com.atguigu.gmall.product.api;
 
+import com.atguigu.gmall.common.result.Result;
 import com.atguigu.gmall.model.product.*;
 import com.atguigu.gmall.product.service.ManageService;
 import io.swagger.annotations.Api;
@@ -55,4 +56,10 @@ public class ProductApiController {
         return manageService.getSkuValueIdsMap(spuId);
     }
 
+
+    //获取全部分类信息  首页使用
+    @GetMapping("getBaseCategoryList")
+    public List<Map> getBaseCategoryList(){
+        return manageService.getBaseCategoryList();
+    }
 }

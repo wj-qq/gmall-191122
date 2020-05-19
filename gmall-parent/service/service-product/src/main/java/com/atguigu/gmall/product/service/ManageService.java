@@ -74,4 +74,8 @@ public interface ManageService {
 
     //根据spuId 查询map 集合属性  销售属性值的组合
     Map getSkuValueIdsMap(Long spuId);
+
+    //获取全部分类信息  首页使用
+    List<Map> getBaseCategoryList();
+
 }

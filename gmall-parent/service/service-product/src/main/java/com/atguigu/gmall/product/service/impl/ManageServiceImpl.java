@@ -21,6 +21,7 @@ import org.springframework.util.CollectionUtils;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -458,5 +459,54 @@ public class ManageServiceImpl implements ManageService {
             }
         }
         return finalResult;*/
+    }
+
+    //获取全部分类信息  首页使用
+    @Override
+    public List<Map> getBaseCategoryList() {
+        //全部分类信息   需要对其封装为前端页面需要的格式
+        List<BaseCategoryView> baseCategoryViews = baseCategoryViewMapper.selectList(null);
+
+        //存放最终结果
+        List<Map> result = new ArrayList<>();
+
+        //一级分类的分组数据集合  key为id，v
+//        baseCategoryViews.stream().collect(Collectors.groupingBy(baseCategoryView -> {baseCategoryView.getCategory1Id()}));
+        Map<Long, List<BaseCategoryView>> category1Map = baseCategoryViews.stream().
+                collect(Collectors.groupingBy(BaseCategoryView::getCategory1Id));
+        int index = 1;
+        for (Map.Entry<Long, List<BaseCategoryView>> category1Entry : category1Map.entrySet()) {
+            Map map1 = new HashMap<>();
+            Long category1Id = category1Entry.getKey();
+            //一级分类对应的 二级分类数据集合
+            List<BaseCategoryView> category2List = category1Entry.getValue();
+            map1.put("index",index++);
+            map1.put("categoryId",category1Id);
+            map1.put("categoryName",category2List.get(0).getCategory1Name());
+            //获取二级分类 的 分组数据集合
+            Map<Long, List<BaseCategoryView>> category2Map = category2List.stream().
+                    collect(Collectors.groupingBy(BaseCategoryView::getCategory2Id));
+            //存放二级分类信息集合
+            List<Map> category2 = new ArrayList<>();
+            for (Map.Entry<Long, List<BaseCategoryView>> category2Entry : category2Map.entrySet()) {
+                Map map2 = new HashMap<>();
+                List<BaseCategoryView> category3List = category2Entry.getValue();
+                map2.put("categoryId",category2Entry.getKey());
+                map2.put("categoryName",category3List.get(0).getCategory2Name());
+                //存放三级分类信息集合
+                List<Map> category3 = new ArrayList<>();
+                for (BaseCategoryView baseCategoryView : category3List) {
+                    Map map3 = new HashMap<>();
+                    map3.put("categoryId",baseCategoryView.getCategory3Id());
+                    map3.put("categoryName",baseCategoryView.getCategory3Name());
+                    category3.add(map3);
+                }
+                map2.put("categoryChild",category3);
+                category2.add(map2);
+            }
+            map1.put("categoryChild",category2);
+            result.add(map1);
+        }
+        return result;
     }
 }

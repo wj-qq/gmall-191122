@@ -39,4 +39,8 @@ public interface ProductFeignClient {
     @GetMapping("/api/product/inner/getSkuValueIdsMap/{spuId}")
     public Map getSkuValueIdsMap(@PathVariable("spuId")Long spuId);
 
+    //获取全部分类信息  首页使用
+    @GetMapping("/api/product/getBaseCategoryList")
+    public List<Map> getBaseCategoryList();
+
 }
