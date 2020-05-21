@@ -1,8 +1,6 @@
 package com.atguigu.gmall.product.client;
 
-import com.atguigu.gmall.model.product.BaseCategoryView;
-import com.atguigu.gmall.model.product.SkuInfo;
-import com.atguigu.gmall.model.product.SpuSaleAttr;
+import com.atguigu.gmall.model.product.*;
 import com.atguigu.gmall.product.client.impl.ProductDegradeFeignClient;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,5 +40,13 @@ public interface ProductFeignClient {
     //获取全部分类信息  首页使用
     @GetMapping("/api/product/getBaseCategoryList")
     public List<Map> getBaseCategoryList();
+
+    //根据tmId 查询品牌信息
+    @GetMapping("/api/product/getBaseTrademark/{tmId}")
+    public BaseTrademark getBaseTrademark(@PathVariable("tmId")Long tmId);
+
+    //根据skuId 查询平台属性值集合
+    @GetMapping("/api/product/inner/getAttrList/{skuId}")
+    public List<SkuAttrValue> getAttrList(@PathVariable("skuId")Long skuId);
 
 }

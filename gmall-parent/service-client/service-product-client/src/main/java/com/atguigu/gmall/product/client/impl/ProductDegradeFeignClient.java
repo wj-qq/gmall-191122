@@ -1,8 +1,6 @@
 package com.atguigu.gmall.product.client.impl;
 
-import com.atguigu.gmall.model.product.BaseCategoryView;
-import com.atguigu.gmall.model.product.SkuInfo;
-import com.atguigu.gmall.model.product.SpuSaleAttr;
+import com.atguigu.gmall.model.product.*;
 import com.atguigu.gmall.product.client.ProductFeignClient;
 import org.springframework.stereotype.Component;
 
@@ -43,6 +41,16 @@ public class ProductDegradeFeignClient implements ProductFeignClient {
 
     @Override
     public List<Map> getBaseCategoryList() {
+        return null;
+    }
+
+    @Override
+    public BaseTrademark getBaseTrademark(Long tmId) {
+        return null;
+    }
+
+    @Override
+    public List<SkuAttrValue> getAttrList(Long skuId) {
         return null;
     }
 }

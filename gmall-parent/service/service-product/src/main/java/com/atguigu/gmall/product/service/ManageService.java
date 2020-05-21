@@ -78,4 +78,10 @@ public interface ManageService {
     //获取全部分类信息  首页使用
     List<Map> getBaseCategoryList();
 
+    //根据tmId 查询品牌信息
+    BaseTrademark getBaseTrademark(Long tmId);
+
+    //根据skuId 查询平台属性值集合
+    List<SkuAttrValue> getAttrList(Long skuId);
+
 }

@@ -62,4 +62,18 @@ public class ProductApiController {
     public List<Map> getBaseCategoryList(){
         return manageService.getBaseCategoryList();
     }
+
+    //根据tmId 查询品牌信息
+    @GetMapping("/getBaseTrademark/{tmId}")
+    public BaseTrademark getBaseTrademark(@PathVariable("tmId")Long tmId){
+        return  manageService.getBaseTrademark(tmId);
+    }
+
+    //根据skuId 查询平台属性值集合
+    @GetMapping("/inner/getAttrList/{skuId}")
+    public List<SkuAttrValue> getAttrList(@PathVariable("skuId")Long skuId){
+        return  manageService.getAttrList(skuId);
+    }
+
+
 }

@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>service-item</artifactId>
+    <artifactId>service-list</artifactId>
 
     <dependencies>
         <dependency>
@@ -17,22 +17,14 @@
             <artifactId>service-product-client</artifactId>
             <version>1.0</version>
         </dependency>
-        <dependency>
-            <groupId>com.atguigu.gmall</groupId>
-            <artifactId>service-list-client</artifactId>
-            <version>1.0</version>
-        </dependency>
-    </dependencies>
 
-    <build>
-        <finalName>service-item</finalName>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+        </dependency>
+
+    </dependencies>
 
 
 </project>
