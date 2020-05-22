@@ -25,3 +25,7 @@ spring:
           uri: lb://web-all
           predicates:
             - Host=www.gmall.com # 路径匹配
+        - id: web-list
+          uri: lb://web-all
+          predicates:
+            - Host=list.gmall.com # 路径匹配

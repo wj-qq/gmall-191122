@@ -69,14 +69,14 @@
                 </li>
             </ul>
             <ul class="fl sui-tag">
-                <li th:if="${searchParam.trademark != null}" class="with-x">
+                <!--<li th:if="${searchParam.trademark != null}" class="with-x">
                     <span th:text="${trademarkParam}"></span>
                     <a th:href="@{${#strings.replace(urlParam+'&order='+searchParam.order,'trademark='+searchParam.trademark,'')}}">×</a>
                 </li>
                 <li th:if="${searchParam.props != null}" th:each="prop : ${propsParamList}" class="with-x">
                     <span th:text="${prop.attrName}+'：'+${prop.attrValue}"></span>
                     <a th:href="@{${#strings.replace(urlParam+'&order='+searchParam.order,'props='+prop.attrId+':'+prop.attrValue+':'+prop.attrName,'')}}">×</a>
-                </li>
+                </li>-->
             </ul>
         </div>
 
@@ -116,7 +116,7 @@
             <div class="sui-navbar">
                 <div class="navbar-inner filter">
                     <ul class="sui-nav">
-                        <li th:class="${orderMap.type == '1' ? 'active': ''}">
+                        <!--<li th:class="${orderMap.type == '1' ? 'active': ''}">
                             <a th:href="${urlParam}+'&order=1:'+${orderMap.sort == 'asc' ? 'desc' : 'asc'}">
                                 综合<span th:if="${orderMap.type == '1'}" th:text="${orderMap.sort == 'asc' ? '↑' : '↓'}"></span>
                             </a>
@@ -125,7 +125,7 @@
                             <a th:href="${urlParam}+'&order=2:'+${orderMap.sort == 'asc' ? 'desc' : 'asc'}">
                                 价格<span th:if="${orderMap.type == '2'}" th:text="${orderMap.sort == 'asc' ? '↑' : '↓'}"></span>
                             </a>
-                        </li>
+                        </li>-->
                         <li>
                             <a href="#">新品</a>
                         </li>
