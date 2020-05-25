@@ -221,7 +221,7 @@ public class ListServiceImpl implements ListService {
         String trademark = searchParam.getTrademark();
         if(StringUtils.isNotEmpty(trademark)){//格式   1:苹果
             String[] split = trademark.split(":");
-            boolQueryBuilder.filter(QueryBuilders.termQuery("tmId",split[0]));
+            boolQueryBuilder.filter(QueryBuilders.termQuery("tmId",split[0]));//filter为追加
         }
         //3.一二三级分类
         Long category1Id = searchParam.getCategory1Id();
@@ -286,6 +286,7 @@ public class ListServiceImpl implements ListService {
         searchRequest.indices("goods");//设置索引库的名称
         searchRequest.types("info");//设置类型 可有可无
         searchRequest.source(searchSourceBuilder);
+
         return searchRequest;
     }
 }

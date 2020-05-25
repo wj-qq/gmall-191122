@@ -16,7 +16,11 @@ spring:
           uri: lb://service-product
           predicates:
             - Path=/*/product/** # 路径匹配
-        ####################以host路由##########################
+        - id: service-user
+          uri: lb://service-user
+          predicates:
+            - Path=/*/user/** # 路径匹配 异步
+        ####################以host路由(同步刷新页面)##########################
         - id: web-item
           uri: lb://web-all
           predicates:
@@ -29,3 +33,14 @@ spring:
           uri: lb://web-all
           predicates:
             - Host=list.gmall.com # 路径匹配
+        - id: web-login
+          uri: lb://web-all
+          predicates:
+            - Host=passport.gmall.com # 路径匹配
+  redis:
+    host: 192.168.200.128
+    port: 6379
+auth:
+  url: trade.html,myOrder.html,pay.html
+location:
+  baseUrl: http://passport.gmall.com/login.html?originUrl=
