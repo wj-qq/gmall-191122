@@ -20,6 +20,10 @@ spring:
           uri: lb://service-user
           predicates:
             - Path=/*/user/** # 路径匹配 异步
+        - id: service-cart
+          uri: lb://service-cart
+          predicates:
+            - Path=/*/cart/** # 路径匹配 异步
         ####################以host路由(同步刷新页面)##########################
         - id: web-item
           uri: lb://web-all
@@ -37,6 +41,10 @@ spring:
           uri: lb://web-all
           predicates:
             - Host=passport.gmall.com # 路径匹配
+        - id: web-cart
+          uri: lb://web-all
+          predicates:
+            - Host=cart.gmall.com
   redis:
     host: 192.168.200.128
     port: 6379

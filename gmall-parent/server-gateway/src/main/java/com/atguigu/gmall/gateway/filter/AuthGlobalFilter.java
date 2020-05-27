@@ -131,7 +131,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             }
         }
 
-        if(StringUtils.isEmpty(token)){
+        if(!StringUtils.isEmpty(token)){
             //利用token拿到用户id
             if(redisTemplate.hasKey("user:login:" + token)){
                 return (String) redisTemplate.opsForValue().get("user:login:" + token);
