@@ -4,12 +4,10 @@ import com.atguigu.gmall.cart.service.CartService;
 import com.atguigu.gmall.common.result.Result;
 import com.atguigu.gmall.common.util.AuthContextHolder;
 import com.atguigu.gmall.model.cart.CartInfo;
+import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -18,6 +16,7 @@ import java.util.List;
  * @author Administrator
  * @create 2020-05-26 0:48
  */
+@Api
 @RestController
 @RequestMapping("/api/cart")
 public class CartApiController {
@@ -55,6 +54,24 @@ public class CartApiController {
         }
         cartService.checkCart(skuId,isChecked,userId);
         return Result.ok();
+    }
+
+    //删除购物车
+    @DeleteMapping("/deleteCart/{skuId}")
+    public Result deleteCart(@PathVariable("skuId")Long skuId,HttpServletRequest request){
+        String userId = AuthContextHolder.getUserId(request);
+        if(StringUtils.isEmpty(userId)){
+            userId = AuthContextHolder.getUserTempId(request);
+        }
+        cartService.deleteCart(skuId,userId);
+        return Result.ok();
+    }
+
+
+    //结算 获取购买商品集合
+    @GetMapping("/getCartCheckedList/{userId}")
+    public List<CartInfo> getCartCheckedList(@PathVariable("userId")Long userId){
+        return cartService.getCartCheckedList(userId);
     }
 
 }

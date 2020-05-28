@@ -7,7 +7,6 @@ import com.atguigu.gmall.model.cart.CartInfo;
 import com.atguigu.gmall.model.product.SkuInfo;
 import com.atguigu.gmall.product.client.ProductFeignClient;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import net.bytebuddy.asm.Advice;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -104,6 +103,42 @@ public class CartServiceImpl implements CartService {
         cartInfo1.setIsChecked(isChecked);
         redisTemplate.opsForHash().put(cartKey,skuId.toString(),cartInfo1);
 
+    }
+
+    //删除购物车
+    @Override
+    public void deleteCart(Long skuId, String userId) {
+        //删除DB
+        cartInfoMapper.delete(new QueryWrapper<CartInfo>().eq("sku_id",skuId));
+        //删除缓存
+        String cartKey = cacheCartKey(userId);
+        redisTemplate.opsForHash().delete(cartKey,skuId.toString());
+
+    }
+
+    //结算 获取购买商品集合
+    @Override
+    public List<CartInfo> getCartCheckedList(Long userId) {
+        //先查缓存
+        String cartKey = cacheCartKey(userId.toString());
+        List<CartInfo> cartInfoList = redisTemplate.opsForHash().values(cartKey);
+        if(CollectionUtils.isEmpty(cartInfoList)){
+            //没有查DB
+            cartInfoList = cartInfoMapper.selectList(new QueryWrapper<CartInfo>().eq("user_id",userId)
+                    .eq("is_checked",1));
+        }else {
+            //过滤出缓存中选中的商品
+            cartInfoList = cartInfoList.stream().filter(cartInfo -> cartInfo.getIsChecked().intValue() == 1 ? true : false)
+                    .collect(Collectors.toList());
+        }
+
+        //需查询实时价格
+        cartInfoList.forEach(cartInfo -> {
+            BigDecimal skuPrice = productFeignClient.getSkuPrice(cartInfo.getSkuId());
+            cartInfo.setSkuPrice(skuPrice);
+        });
+
+        return cartInfoList;
     }
 
     //需要合并购物车  临时==>登录
