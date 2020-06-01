@@ -10,4 +10,9 @@ public interface OrderInfoService {
     boolean hasStock(Long skuId, Integer skuNum);
 
     Long submitOrder(OrderInfo orderInfo);
+
+    void cancelOrder(Long orderId);
+
+    //du对外暴露订单对象
+    OrderInfo getOrderInfo(Long orderId);
 }

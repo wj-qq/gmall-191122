@@ -7,16 +7,20 @@ import com.atguigu.gmall.model.enums.OrderStatus;
 import com.atguigu.gmall.model.enums.ProcessStatus;
 import com.atguigu.gmall.model.order.OrderDetail;
 import com.atguigu.gmall.model.order.OrderInfo;
+import com.atguigu.gmall.mq.MqConst;
+import com.atguigu.gmall.mq.RabbitService;
 import com.atguigu.gmall.order.mapper.CartInfoMapper;
 import com.atguigu.gmall.order.mapper.OrderDetailMapper;
 import com.atguigu.gmall.order.mapper.OrderInfoMapper;
 import com.atguigu.gmall.order.service.OrderInfoService;
 import com.atguigu.gmall.product.client.ProductFeignClient;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import net.bytebuddy.asm.Advice;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
@@ -41,6 +45,8 @@ public class OrderInfoServiceImpl implements OrderInfoService {
     private CartInfoMapper cartInfoMapper;
     @Autowired
     private RedisTemplate redisTemplate;
+    @Autowired
+    private RabbitService rabbitService;
 
 
 
@@ -48,12 +54,13 @@ public class OrderInfoServiceImpl implements OrderInfoService {
     @Override
     public boolean hasStock(Long skuId, Integer skuNum) {
         // http://www.gware.com/hasStock?skuId=10221&num=2
-        String result = HttpClientUtil.doGet(wareUrl + "/hasStock?skuId=" + skuId + "&skuNum=" + skuNum);
+        String result = HttpClientUtil.doGet(wareUrl + "/hasStock?skuId=" + skuId + "&num=" + skuNum);
         return "1".equals(result);
     }
 
     ////保存订单表和订单详情表  //已购买的商品从购物车删除
     @Override
+    @Transactional
     public Long submitOrder(OrderInfo orderInfo) {
 
         //保存订单表
@@ -73,6 +80,7 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             tradeBody += orderDetail.getSkuName() + "  ";
 
         }
+        orderInfo.sumTotalAmount();
         orderInfo.setTradeBody(tradeBody);
         orderInfo.setProcessStatus(ProcessStatus.UNPAID.name());//进度状态
         orderInfoMapper.insert(orderInfo);
@@ -84,13 +92,37 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             orderDetail.setOrderId(orderInfo.getId());//外键
             orderDetailMapper.insert(orderDetail);
             //删除已经购买了商品的购物车
-            cartInfoMapper.delete(new QueryWrapper<CartInfo>().eq("user_id",orderInfo.getUserId())
-                    .eq("sku_id",orderDetail.getSkuId()));//删除数据库
-
-            redisTemplate.opsForHash().delete(cartKey,orderDetail.getSkuId().toString());//删除缓存
+//            cartInfoMapper.delete(new QueryWrapper<CartInfo>().eq("user_id",orderInfo.getUserId())
+//                    .eq("sku_id",orderDetail.getSkuId()));//删除数据库
+//
+//            redisTemplate.opsForHash().delete(cartKey,orderDetail.getSkuId().toString());//删除缓存
         });
 
+        //发延迟消息
+        rabbitService.sendDelayedMessage(MqConst.EXCHANGE_DIRECT_ORDER_CANCEL,
+                MqConst.ROUTING_ORDER_CANCEL,orderInfo.getId(),MqConst.DELAY_TIME);
+
         return orderInfo.getId();
+    }
+
+    //取消订单
+    @Override
+    public void cancelOrder(Long orderId) {
+        OrderInfo orderInfo = orderInfoMapper.selectById(orderId);
+        if(OrderStatus.UNPAID.name().equals(orderInfo.getOrderStatus())){
+            orderInfo.setOrderStatus(OrderStatus.CLOSED.name());
+            orderInfo.setProcessStatus(ProcessStatus.CLOSED.name());
+        }
+    }
+
+
+    //du对外暴露订单对象
+    @Override
+    public OrderInfo getOrderInfo(Long orderId) {
+        OrderInfo orderInfo = orderInfoMapper.selectById(orderId);
+        List<OrderDetail> orderDetailList = orderDetailMapper.selectList(new QueryWrapper<OrderDetail>().eq("order_id", orderId));
+        orderInfo.setOrderDetailList(orderDetailList);
+        return orderInfo;
     }
 
 

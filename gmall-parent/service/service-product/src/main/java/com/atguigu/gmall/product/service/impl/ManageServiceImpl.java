@@ -4,6 +4,8 @@ import com.alibaba.nacos.common.util.UuidUtils;
 import com.atguigu.gmall.common.cache.GmallCache;
 import com.atguigu.gmall.common.constant.RedisConst;
 import com.atguigu.gmall.model.product.*;
+import com.atguigu.gmall.mq.MqConst;
+import com.atguigu.gmall.mq.RabbitService;
 import com.atguigu.gmall.product.mapper.*;
 import com.atguigu.gmall.product.service.ManageService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -68,6 +70,8 @@ public class ManageServiceImpl implements ManageService {
     private RedisTemplate redisTemplate;
     @Autowired
     private RedissonClient redissonClient;
+    @Autowired
+    private RabbitService rabbitService;
 
     //获取商品一级分类
     @Override
@@ -224,6 +228,8 @@ public class ManageServiceImpl implements ManageService {
         skuInfo.setId(skuId);
         skuInfo.setIsSale(1);
         skuInfoMapper.updateById(skuInfo);
+        //发消息 给 搜索微服务
+        rabbitService.sendMessage(MqConst.EXCHANGE_DIRECT_GOODS,MqConst.ROUTING_GOODS_UPPER,skuId);
     }
 
     //下架商品
@@ -233,6 +239,9 @@ public class ManageServiceImpl implements ManageService {
         skuInfo.setIsSale(0);
         skuInfo.setId(skuId);
         skuInfoMapper.updateById(skuInfo);
+        //发消息 给 搜索微服务
+        rabbitService.sendMessage(MqConst.EXCHANGE_DIRECT_GOODS,MqConst.ROUTING_GOODS_LOWER,skuId);
+
     }
 
     //使用redisson缓存及分布式锁

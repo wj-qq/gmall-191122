@@ -28,6 +28,10 @@ spring:
           uri: lb://service-order
           predicates:
             - Path=/*/order/** # 路径匹配 异步
+        - id: service-payment
+          uri: lb://service-payment
+          predicates:
+            - Path=/*/payment/** # 路径匹配
         ####################以host路由(同步刷新页面)##########################
         - id: web-item
           uri: lb://web-all
@@ -53,6 +57,10 @@ spring:
           uri: lb://web-all
           predicates:
             - Host=order.gmall.com
+        - id: web-payment
+          uri: lb://web-all
+          predicates:
+            - Host=payment.gmall.com
   redis:
     host: 192.168.200.128
     port: 6379

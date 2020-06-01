@@ -9,24 +9,19 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>service-product</artifactId>
-
+    <artifactId>service-payment</artifactId>
     <dependencies>
+        <!--导入支付宝支付sdk-->
         <dependency>
-            <groupId>net.oschina.zcx7878</groupId>
-            <artifactId>fastdfs-client-java</artifactId>
-        </dependency>
-        <!--rabbitmq消息队列-->
-        <dependency>
-            <groupId>com.atguigu.gmall</groupId>
-            <artifactId>rabbit-util</artifactId>
-            <version>1.0</version>
+            <groupId>com.alipay.sdk</groupId>
+            <artifactId>alipay-sdk-java</artifactId>
+            <version>4.8.73.ALL</version>
         </dependency>
 
     </dependencies>
 
     <build>
-        <finalName>service-product</finalName>
+        <finalName>service-payment</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

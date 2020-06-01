@@ -40,7 +40,13 @@ public class OrderApiController {
     @Autowired
     private OrderInfoService orderInfoService;
 
-    //订单页面  数据回显
+    //对外暴露订单对象
+    @GetMapping("/getOrderInfo/{orderId}")
+    public OrderInfo getOrderInfo(@PathVariable("orderId") Long orderId){
+        return orderInfoService.getOrderInfo(orderId);
+    }
+
+  //订单页面  数据回显
     @GetMapping("/auth/trade")
     public Result<Map<String,Object>> trade(HttpServletRequest request){
         String userId = AuthContextHolder.getUserId(request);
