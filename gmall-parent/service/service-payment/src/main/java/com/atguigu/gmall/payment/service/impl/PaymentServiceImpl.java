@@ -5,6 +5,8 @@ import com.atguigu.gmall.model.enums.PaymentStatus;
 import com.atguigu.gmall.model.enums.PaymentType;
 import com.atguigu.gmall.model.order.OrderInfo;
 import com.atguigu.gmall.model.payment.PaymentInfo;
+import com.atguigu.gmall.mq.MqConst;
+import com.atguigu.gmall.mq.RabbitService;
 import com.atguigu.gmall.payment.mapper.OrderInfoMapper;
 import com.atguigu.gmall.payment.mapper.PaymentMapper;
 import com.atguigu.gmall.payment.service.PaymentService;
@@ -26,6 +28,8 @@ public class PaymentServiceImpl implements PaymentService {
     private PaymentMapper paymentMapper;
     @Autowired
     private OrderInfoMapper orderInfoMapper;
+    @Autowired
+    private RabbitService rabbitService;
 
     //保存支付信息表
     @Override
@@ -71,6 +75,9 @@ public class PaymentServiceImpl implements PaymentService {
             paymentInfo.setCallbackContent(JSONObject.toJSONString(paramsMap));
 
             paymentMapper.updateById(paymentInfo);
+
+            //更新订单状态  使用MQ
+            rabbitService.sendMessage(MqConst.EXCHANGE_DIRECT_PAYMENT_PAY,MqConst.ROUTING_PAYMENT_PAY,paymentInfo.getOrderId());
         }
     }
 }

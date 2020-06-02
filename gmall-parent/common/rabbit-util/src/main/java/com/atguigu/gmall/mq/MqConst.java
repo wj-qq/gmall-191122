@@ -27,4 +27,30 @@ public class MqConst {
     //取消订单 延迟时间 单位：秒
     public static final int DELAY_TIME  = 2*60;
 
+    /**
+     * 订单支付
+     */
+    public static final String EXCHANGE_DIRECT_PAYMENT_PAY = "exchange.direct.payment.pay";
+    public static final String ROUTING_PAYMENT_PAY = "payment.pay";
+    //队列
+    public static final String QUEUE_PAYMENT_PAY  = "queue.payment.pay";
+
+    /**
+     * 减库存
+     */
+    public static final String EXCHANGE_DIRECT_WARE_STOCK = "exchange.direct.ware.stock";
+    public static final String ROUTING_WARE_STOCK = "ware.stock";
+    //队列
+    public static final String QUEUE_WARE_STOCK  = "queue.ware.stock";
+
+
+
+    /**
+     * 减库存成功，更新订单状态
+     */
+    public static final String EXCHANGE_DIRECT_WARE_ORDER = "exchange.direct.ware.order";
+    public static final String ROUTING_WARE_ORDER = "ware.order";
+    //队列
+    public static final String QUEUE_WARE_ORDER  = "queue.ware.order";
+
 }

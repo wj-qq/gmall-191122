@@ -125,4 +125,16 @@ public class OrderApiController {
     }
 
 
+    //由库存微服务发出来的请求 要求折单
+    @PostMapping("/orderSplit")
+    public List<Map<String,Object>> orderSplit(String orderId, String wareSkuMap){
+        //1:订单折分  入参：
+        List<OrderInfo> orderInfoList = orderInfoService.orderSplit(orderId,wareSkuMap);//1个原始订单 至少折单 2个
+        //2:返回值
+        List<Map<String, Object>> mapList = orderInfoList.stream().map(orderInfo -> {
+            return orderInfoService.initWareOrder(orderInfo);
+        }).collect(Collectors.toList());
+        return mapList;
+
+    }
 }
